@@ -1,20 +1,28 @@
 #!/usr/bin/env python
 
 """
-"""
+Interactive recording of protocol and calculation of scores.
 
-PLAYERS = 3
+  USAGE: poolya.py <POOL SIZE> [VARIANT]
+"""
 
 # Bids
 MISERE = 0; PASS = 1; HWHIST = 2; WHIST = 3; CONTRACT = 4
 
 # Players
-W = 0; S = 1; E = 2
+#PLAYERS = 3
+W = 0; S = 1; E = 2; N = 3
 
 class Pool(object):
   """
+  Pool base class. Provides some generic scoring methods, probably similar to
+  Lenningrad/Peter or the Sochi variants. This class is meant to be overloaded
+  by a specific preferans variant to fine-tune scoring methods.
+  Provides default new game initialization, and conversion of the scoresheet
+  to string.
   """
-  def __init__(self, pool_size=10):
+  def __init__(self, pool_size=10, players=3, running_tally=True):
+    # Scoring constants
     self.CONTRACT_VALUE = { 0: 10, 6: 2, 7: 4, 8: 6, 9: 8, 10: 10 }
     self.WHIST_OBLIGATION = { 6: 4, 7: 2, 8: 1, 9: 1, 10: 1 }
     self.WHIST_COEFF = 1
@@ -22,16 +30,26 @@ class Pool(object):
     self.AID_WHIST_VALUE = 10
     self.HILL_WHIST_VALUE = 3
 
+    # Game config
     self.pool_size = pool_size
-    self.hill = [0, 0, 0]
-    self.pool = [0, 0, 0]
-    self.whists = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    self.players = players
+    self.running_tally = running_tally
+
+    # New game init
+    self.hill = [0, 0, 0, 0]
+    self.pool = [0, 0, 0, 0]
+    self.whists = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     self.closed = False
 
 
   def __str__(self):
-    self.tally()
-    return """\
+    """
+    Produces an ASCII representation of the poolya score sheet.
+    """
+    tally = self.tally() if self.running_tally or self.closed else ""
+
+    if self.players == 3:
+      return """\
 Pool: {}, Size: {}
 +---------------------------+
 |   |   |     |     |   |   |
@@ -47,50 +65,100 @@ Pool: {}, Size: {}
 |  /+-------------------+\  |
 |/     {:^3}    |   {:^3}      \|
 +---------------------------+
-W: {:d}  S: {:d}  E: {:d}
 """.format(self.VARIANT, self.pool_size, 
-    self.whists[W][E], self.whists[E][W],
-    self.hill[W], self.hill[E],
-    self.pool[W], self.pool[E],
-    self.hill[S],
-    self.whists[W][S], self.whists[E][S],
-    self.pool[S],
-    self.whists[S][W], self.whists[S][E],
-    self.whists[W][W], self.whists[S][S], self.whists[E][E])
+      self.whists[W][E], self.whists[E][W],
+      self.hill[W], self.hill[E],
+      self.pool[W], self.pool[E],
+      self.hill[S],
+      self.whists[W][S], self.whists[E][S],
+      self.pool[S],
+      self.whists[S][W], self.whists[S][E]) + tally
+
+    else:
+      return """\
+Pool: {}, Size: {}
++---------------------------+
+|\    {:^3}  | {:^3} |  {:^3}    /|
+|  \+-------------------+/  |
+|   |\       {:^3}       /|   |
+|{:^3}|  \+-----------+/  |{:^3}|
+|   |   |\   {:^3}   /|   |   |
+|---|   |  \     /  |   |---|
+|   |   |    \\N/    |   |   |
+|{:^3}|{:^3}|{:^3} WXE {:^3}|{:^3}|{:^3}|
+|   |   |    /S\    |   |   |
+|---|   |  /     \  |   |---|
+|   |   |/   {:^3}   \|   |   |
+|{:^3}|  /+-----------+\  |{:^3}|
+|   |/       {:^3}       \|   |
+|  /+-------------------+\  |
+|/    {:^3}  | {:^3} |  {:^3}    \|
++---------------------------+
+""".format(self.VARIANT, self.pool_size, 
+      self.whists[N][W], self.whists[N][S], self.whists[N][E],
+      self.pool[N],
+      self.whists[W][N], self.whists[E][N],
+      self.hill[N],
+      self.whists[W][E], self.pool[W], self.hill[W], self.hill[E], self.hill[E],
+        self.whists[E][W],
+      self.hill[S],
+      self.whists[W][S], self.whists[E][S],
+      self.pool[S],
+      self.whists[S][W], self.whists[S][N], self.whists[S][E]) + tally
 
 
   def set_scores(self, pool, hill, whists):
-    for i in range(PLAYERS):
+    """
+    Sets the game to any score given by the pool, hill and whists passed in.
+    """
+    for i in range(self.players):
       self.pool[i] = pool[i][-1]
       self.hill[i] = hill[i][-1]
-      for j in range(PLAYERS):
+      for j in range(self.players):
         self.whists[i][j] = whists[i][j][-1]
 
 
   def inc_whists(self, player, target, amt):
+    """
+    Write whists of player against target.
+    """
     self.whists[player][target] += amt
 
 
   def inc_pool(self, player, amt):
+    """
+    Write points into player's pool.
+    """
     self.pool[player] += amt
 
 
   def inc_hill(self, player, amt):
+    """
+    Write points into player's hill."
+    """
     self.hill[player] += amt
 
 
   def score_passes(self, tricks):
+    """
+    Base scoring of passes round."
+    """
     raise NotImplementedError("Scoring passes round not implemented.")
 
 
   def score_consolation(self, player, tricks):
-    for w in range(PLAYERS):
+    """
+    All players receive consolation whists against player in the case of
+    player's remise.
+    """
+    for w in range(self.players):
       if w != player:
         self.inc_whists(w, player, self.CONSOLATION_VALUE * tricks)
 
 
   def score_misere(self, player, tricks):
     """
+    Base scoring of a misere contract round.
     """
     # Successful misere, player receives value of contract into the pool
     if tricks == 0:
@@ -107,6 +175,7 @@ W: {:d}  S: {:d}  E: {:d}
   def score_contract(self, player, contract,
       whister1=None, tricks=None, whister2=None):
     """
+    Base scoring of 6-10 contract rounds.
     """
     # Uncontested contract; player receives value of contract into the pool.
     if whister1 == None:
@@ -175,6 +244,10 @@ W: {:d}  S: {:d}  E: {:d}
               max(obligation - (tricks[whister1] + tricks[whister2]), 0))
 
   def give_aid(self, aider, aidee, aid):
+    """
+    Give aidee aid points into the pool, in exchange for which the aider writes
+    whists against aidee.
+    """
     needs = self.pool_size - self.pool[aidee]
     gets = min(needs, aid)
     self.pool[aidee] += gets
@@ -191,38 +264,65 @@ W: {:d}  S: {:d}  E: {:d}
     hill = [0, 0, 0]
     whist_adjust = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
     # Write incomplete pool into the hill for intermediate tallies.
-    for i in range(PLAYERS):
+    for i in range(self.players):
       hill[i] = self.hill[i] + (self.pool_size - self.pool[i])
-    for i in range(PLAYERS):
+    for i in range(self.players):
       # Increment/decrement hill value to prevent non-integral whist values.
       #   If hill is incremented, player writes compensation whists against the
       #   other two. If decremented, they write whists against him.
-      if hill[i] % PLAYERS == 0:
+      if hill[i] % self.players == 0:
         pass
-      elif hill[i] % PLAYERS > PLAYERS / 2:
+      elif hill[i] % self.players > self.players / 2:
         hill[i] += 1
-        for j in range(PLAYERS):
+        for j in range(self.players):
           if j != i:
             whist_adjust[i][j] += self.HILL_WHIST_VALUE
-      elif hill[i] % PLAYERS < PLAYERS / 2:
+      elif hill[i] % self.players < self.players / 2:
         hill[i] -= 1
-        for j in range(PLAYERS):
+        for j in range(self.players):
           if j != i:
             whist_adjust[j][i] += self.HILL_WHIST_VALUE
   
-    for i in range(PLAYERS):
-      for j in range(PLAYERS):
+    for i in range(self.players):
+      for j in range(self.players):
         if j != i:
-          self.whists[j][j] += (hill[i] - hill[j]) * 10 // PLAYERS
+          self.whists[j][j] += (hill[i] - hill[j]) * 10 // self.players
           self.whists[i][i] += (self.whists[i][j] + whist_adjust[i][j]) - \
               (self.whists[j][i] + whist_adjust[j][i])
+
+    tally = "W: {:d}  S: {:d}  E: {:d}".format(self.whists[W][W],
+        self.whists[S][S], self.whists[E][E])
+    if self.players == 4:
+      tally = "N: {:d}  ".format(self.whists[N][N]) + tally
+    return tally
 
 
 class Rostov(Pool):
   """
+  Rostov/Moscow preferans variant. Characterized by:
+    - Semi-responsible whist: remise of whister is punished by half the cost
+      of the contract into the hill for every undertrick.
+    - Consolation due to player's remise is received by all other players,
+      including the dealer.
+    - Gentlemanly whist: in the event of player's remise, points for taken whist
+      tricks are split evenly among defenders, even if one of the whisters
+      passed.
+    - Passes round is scored in whists, usually 5 whists per trick taken. The
+      winner of the passes round is the player(s) who took the fewest tricks.
+      This player writes whists against all others based on the number of tricks
+      they took.
+    - No progression for passes round.
+    - For zero tricks during a passes round, a player writes 1 point into the
+      pool.
+    - The blind is never opened during the passes round.
+    - If there are four players, the dealer writes 1 point into the pool, as for
+      zero tricks.
+    - The game is played until all players reach the agreed-upon pool value. If
+      a player has more in his pool than this value, the excess is given to
+      another player as aid, in exchange for whists in a ten-fold quantity.
   """
-  def __init__(self, pool_size=10):
-    super().__init__(pool_size)
+  def __init__(self, pool_size=10, players=3):
+    super().__init__(pool_size, players)
     self.VARIANT = "Rostov"
     self.PASSES_WHIST_VALUE = 5
     self.CONSOLATION_VALUE = 10
@@ -232,11 +332,16 @@ class Rostov(Pool):
 
 
   def inc_pool(self, player, amt):
+    """
+    Increment a player's pool, without permitting the value to exceed the
+    pool_size. Excess points are given to another player as aid in exchange for
+    whists, or written off from the hill of the player.
+    """
     self.pool[player] += amt
     # Check for too much in the pool, determine aid
     aid = max(self.pool[player] - self.pool_size, 0)
-    left = (player - 1 + PLAYERS) % PLAYERS
-    right = (player + 1) % PLAYERS
+    left = (player - 1 + self.players) % self.players
+    right = (player + 1) % self.players
     while aid != 0:
       self.pool[player] = self.pool_size
       # Determine aidee: the player with the next highest pool, or the player
@@ -263,13 +368,19 @@ class Rostov(Pool):
         aid = self.give_aid(player, aidee, aid)
 
     # Check if pool of each player has reached the pool_size; game over
-    for i in range(PLAYERS):
+    for i in range(self.players):
       if self.pool[i] != self.pool_size:
         return
     self.closed = True
 
 
   def score_passes(self, tricks):
+    """
+    The winner of the passes round is the player(s) who took the fewest tricks.
+    This/these player(s) write whists against the others for the number of
+    tricks that the others took. If a player took no tricks, he writes 1 point
+    into the pool.
+    """
     m = min(tricks) # fewest tricks taken
     # Segregate winners and losers.
     winners = []
@@ -297,6 +408,12 @@ class Rostov(Pool):
   def score_contract(self, player, contract,
       whister1=None, tricks=None, whister2=None):
     """
+    For successfully completing the contract, the player writes the worth of
+    the contract into his pool; for a remise, he writes the worth of the
+    contract into the hill for every undertrick. The whisters receive whists for
+    tricks taken and consolation for the player's remise.
+      - Semi-responsible whist (punishement for remise of whisters is half)
+      - Gentlemanly whist (whisters always split whists for player's remise)
     """
     # Uncontested contract; player receives value of contract into the pool.
     if whister1 == None:
@@ -379,6 +496,7 @@ class Rostov(Pool):
               max(obligation - (tricks[whister1] + tricks[whister2]), 0))
 
 
+###############################################################################
 EN = 'en'
 RU = 'ru'
 LANG = EN
@@ -401,12 +519,6 @@ PROMPT[RU] = """\
 
 VARIANTS = ["Rostov"]
 
-USAGE = """\
-poolya.py <POOL SIZE> [VARIANT]
-  POOL SIZE -- the maximum score to play to
-  VARIANT -- One of {}
-""".format(','.join(VARIANTS))
-
 DEFAULT_POOL = 10
 DEFAULT_VARIANT = "Rostov"
 
@@ -419,8 +531,8 @@ if __name__ == "__main__":
     print("No pool size given, defaulting to {}.".format(DEFAULT_POOL))
     pool = DEFAULT_POOL
   except ValueError:
-    print("Invalid pool size given.")
-    print(USAGE)
+    print("Error: Invalid pool size given.")
+    print(__doc__)
     exit(1)
 
   try:
@@ -429,8 +541,8 @@ if __name__ == "__main__":
     print("No variant given, defaulting to {}.".format(DEFAULT_VARIANT))
     variant = DEFAULT_VARIANT
   if variant not in VARIANTS:
-    print("Invalid variant selected.")
-    print(USAGE)
+    print("Error: Invalid variant selected.")
+    print(__doc__)
     exit(1)
 
   if variant == "Rostov":
@@ -474,10 +586,10 @@ if __name__ == "__main__":
           print("Error: attempt to revert more deals than have been dealt.")
           continue
         else:
-          for i in range(PLAYERS):
+          for i in range(p.players):
             pool_hist[i] = pool_hist[i][:revert]
             hill_hist[i] = hill_hist[i][:revert]
-            for j in range(PLAYERS):
+            for j in range(p.players):
               whists_hist[i][j] = whists_hist[i][j][:revert]
           deals += revert
           p.set_scores(pool_hist, hill_hist, whists_hist)
@@ -574,10 +686,10 @@ if __name__ == "__main__":
 
       if input_valid:
         deals += 1
-        for i in range(PLAYERS):
+        for i in range(p.players):
           pool_hist[i].append(p.pool[i])
           hill_hist[i].append(p.hill[i])
-          for j in range(PLAYERS):
+          for j in range(p.players):
             whists_hist[i][j].append(p.whists[i][j])
 
   # Print final score sheet before exit.
