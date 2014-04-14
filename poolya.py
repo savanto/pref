@@ -186,33 +186,36 @@ W: {:d}  S: {:d}  E: {:d}
 
   def tally(self):
     """
-    Calculate final scores.
+    Calculate intermediate and final scores.
     """
-    hills = [0, 0, 0]
-    hill_whists = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    hill = [0, 0, 0]
+    whist_adjust = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    # Write incomplete pool into the hill for intermediate tallies.
+    for i in range(PLAYERS):
+      hill[i] = self.hill[i] + (self.pool_size - self.pool[i])
     for i in range(PLAYERS):
       # Increment/decrement hill value to prevent non-integral whist values.
       #   If hill is incremented, player writes compensation whists against the
       #   other two. If decremented, they write whists against him.
-      if self.hill[i] % PLAYERS == 0:
+      if hill[i] % PLAYERS == 0:
         pass
-      elif self.hill[i] % PLAYERS > PLAYERS / 2:
-        hills[i] = self.hill[i] + 1
+      elif hill[i] % PLAYERS > PLAYERS / 2:
+        hill[i] += 1
         for j in range(PLAYERS):
           if j != i:
-            hill_whists[i][j] += self.HILL_WHIST_VALUE
-      elif self.hill[i] % PLAYERS < PLAYERS / 2:
-        hills[i] = self.hill[i] - 1
+            whist_adjust[i][j] += self.HILL_WHIST_VALUE
+      elif hill[i] % PLAYERS < PLAYERS / 2:
+        hill[i] -= 1
         for j in range(PLAYERS):
           if j != i:
-            hill_whists[j][i] += self.HILL_WHIST_VALUE
+            whist_adjust[j][i] += self.HILL_WHIST_VALUE
   
     for i in range(PLAYERS):
       for j in range(PLAYERS):
         if j != i:
-          self.whists[j][j] += (hills[i] - hills[j]) * 10 // PLAYERS
-          self.whists[i][i] += (self.whists[i][j] + hill_whists[i][j]) - \
-              (self.whists[j][i] + hill_whists[j][i])
+          self.whists[j][j] += (hill[i] - hill[j]) * 10 // PLAYERS
+          self.whists[i][i] += (self.whists[i][j] + whist_adjust[i][j]) - \
+              (self.whists[j][i] + whist_adjust[j][i])
 
 
 class Rostov(Pool):
@@ -449,7 +452,6 @@ if __name__ == "__main__":
   while not p.closed:
     # Output poolya
     print(p)
-    print(deals)
 
     # Input loop
     input_valid = False
@@ -472,7 +474,6 @@ if __name__ == "__main__":
           print("Error: attempt to revert more deals than have been dealt.")
           continue
         else:
-          print(revert)
           for i in range(PLAYERS):
             pool_hist[i] = pool_hist[i][:revert]
             hill_hist[i] = hill_hist[i][:revert]
@@ -579,8 +580,5 @@ if __name__ == "__main__":
           for j in range(PLAYERS):
             whists_hist[i][j].append(p.whists[i][j])
 
-  # Print final score sheet before calculations.
+  # Print final score sheet before exit.
   print(p)
-
-  # TODO: tally up scores
-  print("Final scores: TODO")
