@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 """
+Initialize and shuffle the deck, and deal three hands and the blind.
 """
 
 from random import randint
@@ -9,29 +10,22 @@ S = 0; C = 1; D = 2; H = 3
 J = 11; Q = 12; K = 13; A = 14
 SUIT = 0; RANK = 1
 
-SUITS = { 'en':      ['s', 'c', 'd', 'h'],
-          'ru':      ['п', 'т', 'б', 'ч'],
-          'u_black': ['\u2660', '\u2663', '\u2666', '\u2665'],
-          'u_white': ['\u2664', '\u2667', '\u2662', '\u2661'],
-          'u_bw':    ['\u2660', '\u2663', '\u2662', '\u2661'],
-          'u_wb':    ['\u2664', '\u2667', '\u2666', '\u2665'] }
+SUITS = { 'en':      ['s', 'c', 'd', 'h', '*'],
+          'ru':      ['п', 'т', 'б', 'ч', '*'],
+          'u_black': ['\u2660', '\u2663', '\u2666', '\u2665', '\u2010'],
+          'u_white': ['\u2664', '\u2667', '\u2662', '\u2661', '\u2010'],
+          'u_bw':    ['\u2660', '\u2663', '\u2662', '\u2661', '\u2010'],
+          'u_wb':    ['\u2664', '\u2667', '\u2666', '\u2665', '\u2010'] }
 
 FACES = { 'en':      ['J', 'Q', 'K', 'A'],
           'ru':      ['В', 'Д', 'К', 'Т'] }
 
-"""
-class Card(object):
-  def __init__(self, suit, rank):
-    self.suit = suit
-    self.rank = rank
-
-
-  def __str__(self):
-    return ' '.join(SUITS['en'][self.suit], (FACES['en'][self.rank-11] if
-      11 <= self.rank <= 14 else self.rank))
-"""
 
 class Deck(object):
+  """
+  Consists of list of tuples representing cards. Helper functions to shuffle
+  and deal cards.
+  """
   def __init__(self):
     self.cards = []
     for suit in range(4):
@@ -47,6 +41,7 @@ class Deck(object):
 
   def shuffle(self, times=7):
     """
+    Rebuilds the card list at random the given number of times.
     """
     for t in range(times):
       sh = []
@@ -59,6 +54,9 @@ class Deck(object):
 
   def deal(self):
     """
+    Deals two cards at a time, as per convention. First round of three pairs go
+    to the players, then a single pair of cards is set aside as the blind, then
+    the remaining cards are given out in pairs to the rest of the players.
     """
     self.shuffle()
     hands = []
@@ -75,6 +73,10 @@ class Deck(object):
 
 
 class Hand(object):
+  """
+  The cards belonging to a single player (or the blind), segregated by suit and
+  sorted.
+  """
   def __init__(self, cards, order_asc=True):
     # Arrange cards by suit
     self.cards = [[], [], [], []]
