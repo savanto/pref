@@ -69,7 +69,7 @@ class Deck(object):
     for i in range(8, 32, 2):
       hands[j] += self.cards[i:i+2]
       j = (j + 1) % 3
-    return [ Hand(h) for h in hands ]
+    return [ Hand(h) for h in hands[:3] ], Hand(hands[-1])
 
 
 class Hand(object):
@@ -89,16 +89,21 @@ class Hand(object):
 
 
   def __str__(self):
+    return ' '.join(' '.join("{} {}".format(SUITS['u_wb'][c[0]],
+      FACES['en'][c[1]-11] if J <= c[1] <= A else c[1]) for c in s)
+        for s in self.cards if len(s) != 0)
+    """
     hand = ""
     for s in range(4):
       hand += "{} ".format(SUITS['u_wb'][s]) + \
           ','.join(FACES['en'][c[RANK]-11] if J <= c[RANK] <= A else \
           str(c[RANK]) for c in self.cards[s]) + '\n'
     return hand
-
+    """
 
 if __name__ == "__main__":
   d = Deck()
-  hands = d.deal()
+  hands, blind = d.deal()
   for hand in hands:
     print(hand)
+  print(blind)

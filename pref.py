@@ -5,13 +5,14 @@ Preferans for terminal.
 """
 
 import sys
-import cmd
+import cmd, game
 
 VERSION = '0.1'
 
 BANNER = """\
-Preferans for terminal v{}
+Preferans v. {}
 Type "help" for available commands.""".format(VERSION)
+
 
 
 print(BANNER)
@@ -27,11 +28,14 @@ while True:
 
   # new
   elif inpt[0] in ['new', 'n']:
-    params = cmd.new(inpt)
-    if params != None:
-      pool_size, variant = params
-      print("Pool: {}, Size: {}".format(variant, pool_size))
-      print("TODO: start new game")
+    game_params = cmd.new(inpt)
+    if game_params != None:
+      pool_size, variant = game_params
+      game.play(pool_size=pool_size, variant=variant)
+
+  # config
+  elif inpt[0] in ['config', 'configure', 'c']:
+    cmd.config(inpt)
 
   # quit
   elif inpt[0] in ['quit', 'q']:

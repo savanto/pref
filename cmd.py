@@ -3,12 +3,6 @@
 """
 """
 
-HELP = {
-'new':    "new <pool size> <variant> -- Start a new game.",
-'help':   "help <command>            -- Show this or help for a given command.",
-'quit':   "quit                      -- Exit the game."
-}
-
 
 VARIANTS = ['rostov']
 
@@ -61,6 +55,12 @@ def new(inpt):
     return pool_size, variant
 
 
+HELP = {
+'new':  "new [pool size] [variant] -- Start a new game.",
+'help': "help [cmd1] [cmd2] ...    -- Show help for given command(s).",
+'quit': "quit                      -- Exit the game."
+}
+
 def help(inpt):
   if len(inpt) == 1:
     for item in HELP:
@@ -69,3 +69,11 @@ def help(inpt):
     for item in inpt[1:]:
       print(HELP.get(item, "Invalid command: <{}>".format(item)))
 
+
+DEFAULT_CONFIG = {
+'variant':  ["rostov"],
+'whist': []
+}
+
+def config(inpt):
+  pass
