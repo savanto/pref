@@ -6,16 +6,16 @@ Initialize and shuffle the deck, and deal three hands and the blind.
 
 from random import randint
 
-S = 0; C = 1; D = 2; H = 3
+S = 0; C = 1; D = 2; H = 3; NT = 4; BACK = 5
 J = 11; Q = 12; K = 13; A = 14
-SUIT = 0; RANK = 1; BACK = 4
+SUIT = 0; RANK = 1
 
-SUITS = { 'en':      ['s', 'c', 'd', 'h', '*'],
-          'ru':      ['п', 'т', 'б', 'ч', '*'],
-          'u_black': ['\u2660', '\u2663', '\u2666', '\u2665', '\u2610'],
-          'u_white': ['\u2664', '\u2667', '\u2662', '\u2661', '\u2610'],
-          'u_bw':    ['\u2660', '\u2663', '\u2662', '\u2661', '\u2610'],
-          'u_wb':    ['\u2664', '\u2667', '\u2666', '\u2665', '\u2610'] }
+SUITS = { 'en':      ['s', 'c', 'd', 'h', 'nt', '*'],
+          'ru':      ['п', 'т', 'б', 'ч', 'бк', '*'],
+          'u_black': ['\u2660', '\u2663', '\u2666', '\u2665', 'NT', '\u2610'],
+          'u_white': ['\u2664', '\u2667', '\u2662', '\u2661', 'NT', '\u2610'],
+          'u_bw':    ['\u2660', '\u2663', '\u2662', '\u2661', 'NT', '\u2610'],
+          'u_wb':    ['\u2664', '\u2667', '\u2666', '\u2665', 'NT', '\u2610'] }
 
 FACES = { 'en':      ['J', 'Q', 'K', 'A'],
           'ru':      ['В', 'Д', 'К', 'Т'] }
@@ -49,7 +49,8 @@ class Deck(object):
         c = randint(0, len(self.cards)-1)
         sh.append(self.cards[c])
         del self.cards[c]
-      self.cards = sh
+      # Cut
+      self.cards = sh[16:] + sh[:16]
 
 
   def deal(self):
@@ -87,31 +88,6 @@ def arrange(cards, order_asc=True):
       suit.reverse()
   return hand
 
-"""
-class Hand(object):
-  The cards belonging to a single player (or the blind), segregated by suit and
-  sorted.
-  def __init__(self, cards, order_asc=True):
-    # Arrange cards by suit
-    self.cards = [[], [], [], []]
-    for c in cards:
-      self.cards[c[SUIT]].append(c)
-    for hand in self.cards:
-      hand.sort()
-      if order_asc:
-        hand.reverse()
-
-  def __str__(self):
-    return ' '.join(' '.join("{} {}".format(SUITS['u_wb'][c[0]],
-      FACES['en'][c[1]-11] if J <= c[1] <= A else c[1]) for c in s)
-        for s in self.cards if len(s) != 0)
-    hand = ""
-    for s in range(4):
-      hand += "{} ".format(SUITS['u_wb'][s]) + \
-          ','.join(FACES['en'][c[RANK]-11] if J <= c[RANK] <= A else \
-          str(c[RANK]) for c in self.cards[s]) + '\n'
-    return hand
-"""
 
 if __name__ == "__main__":
   d = Deck()

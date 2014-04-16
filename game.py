@@ -38,8 +38,8 @@ def play(pool_size=10, variant='rostov'):
     bids = [None, None, None]
     while bidding:
       if not pls[turn].ai:
-        draw_table(first=first, bidding=True, bids=bids, blind=blind,
-           hands=[pls[W].ncards(), pls[E].hand, pls[S].hand])
+        draw_table(first=first, bidding=True, bids=bids,# blind=blind,
+           hands=[pls[W].ncards(), pls[E].ncards(), pls[S].hand])
       pls[turn].make_bid(turn, bids)
       turn = (turn + 1) % 3
 
@@ -76,6 +76,7 @@ W {:<2} {:<9}              E {:<2} {:<6}
           for c in s) for s in blind if len(s) != 0) \
           if blind is not None else TWO_BACKS if bidding else '',
 
+      # W/E cards (open/closed)
       "{} {}".format(SUITS[cards.S], ','.join(FACES[c[RANK]-11] \
           if cards.J <= c[RANK] <= cards.A else \
           str(c[RANK]) for c in hands[W][cards.S]) \
@@ -129,9 +130,11 @@ W {:<2} {:<9}              E {:<2} {:<6}
       '' if type(hands[E]) is list else TWO_BACKS \
           if hands[E] >= 10 else BACK if hands[E] == 9 else '',
       
+      # S tricks/first bid
       1 if first == S else tricks[S] if tricks[S] != 0 else '',
       bids[S] if bids[S] != None else '',
 
+      # S hand (open/closed)
       "{} {}".format(SUITS[cards.S], ','.join(FACES[c[RANK]-11] \
           if cards.J <= c[RANK] <= cards.A else \
           str(c[RANK]) for c in hands[S][cards.S]) \
@@ -161,23 +164,6 @@ W {:<2} {:<9}              E {:<2} {:<6}
 
   print(table)
 
-
-
-"""
-W                     x:10 x:10     E
-----------------                    ----------------
-s:A,K,J,10,9,8,7                    s:A,K,J,10,9,8,7
-c:A,K,J,10,9,8,7                    s:A,K,J,10,9,8,7
-d:A,K,J,10,9,8,7                    s:A,K,J,10,9,8,7
-h:A,K,J,10,9,8,7                    s:A,K,J,10,9,8,7
-
-                  S
-                  ----------------
-                  s:A,K,J,10,9,8,7
-                  c:A,K,J,10,9,8,7
-                  d:A,K,J,10,9,8,7
-                  h:A,K,J,10,9,8,7
-"""
 
 if __name__ == "__main__":
   play()
